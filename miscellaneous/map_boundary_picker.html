@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FEEMS Boundary Picker</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0f1117;
+    color: #e2e4e9;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  #map {
+    flex: 1;
+    height: 100vh;
+    cursor: crosshair;
+  }
+
+  .sidebar {
+    width: 380px;
+    background: #161821;
+    border-left: 1px solid #2a2d3a;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #2a2d3a;
+  }
+
+  .sidebar-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f0f1f4;
+    margin-bottom: 4px;
+  }
+
+  .sidebar-header p {
+    font-size: 12px;
+    color: #6b7084;
+    line-height: 1.5;
+  }
+
+  .controls {
+    padding: 12px 20px;
+    border-bottom: 1px solid #2a2d3a;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid #2a2d3a;
+    background: #1e2030;
+    color: #c4c7d4;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  button:hover {
+    background: #262940;
+    border-color: #3d4160;
+    color: #f0f1f4;
+  }
+
+  .btn-danger { border-color: #5c2b2b; color: #e8706f; }
+  .btn-danger:hover { background: #3a1f1f; border-color: #7a3535; }
+
+  .btn-primary { background: #2d4a7a; border-color: #3b6098; color: #a8cdf0; }
+  .btn-primary:hover { background: #345888; }
+
+  .btn-success { background: #1e4a3a; border-color: #2a6050; color: #7ad4b0; }
+  .btn-success:hover { background: #255a48; }
+
+  .coord-list-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 20px;
+  }
+
+  .coord-list-wrapper::-webkit-scrollbar { width: 4px; }
+  .coord-list-wrapper::-webkit-scrollbar-track { background: transparent; }
+  .coord-list-wrapper::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 4px; }
+
+  .coord-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #1e2030;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    gap: 10px;
+  }
+
+  .coord-item .idx {
+    color: #4a4e6a;
+    font-size: 10px;
+    width: 22px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .coord-item .vals {
+    color: #b0b5cc;
+    flex: 1;
+  }
+
+  .coord-item .remove-btn {
+    background: none;
+    border: none;
+    color: #4a4e6a;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 14px;
+    line-height: 1;
+    border-radius: 3px;
+  }
+
+  .coord-item .remove-btn:hover {
+    color: #e8706f;
+    background: #2a1a1a;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #3d4160;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .output-section {
+    border-top: 1px solid #2a2d3a;
+    padding: 16px 20px;
+  }
+
+  .output-section label {
+    font-size: 11px;
+    color: #6b7084;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 100px;
+    background: #0f1117;
+    border: 1px solid #2a2d3a;
+    border-radius: 6px;
+    color: #a8cdf0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 10px;
+    resize: none;
+    line-height: 1.6;
+  }
+
+  textarea:focus { outline: none; border-color: #3b6098; }
+
+  .point-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #4a4e6a;
+    padding: 4px 0;
+  }
+
+  .sample-marker {
+    background: #1a1a2e;
+    border: 2px solid #f5a623;
+    border-radius: 50%;
+    width: 8px;
+    height: 8px;
+  }
+
+  .instructions {
+    background: #1a1e30;
+    border: 1px solid #2a3555;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #8a90aa;
+  }
+
+  .instructions strong { color: #a8cdf0; }
+
+  .status-bar {
+    padding: 8px 20px;
+    border-top: 1px solid #2a2d3a;
+    font-size: 11px;
+    color: #4a4e6a;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>FEEMS Boundary Picker</h1>
+    <p>Click on the map to place boundary vertices. Points form a polygon in order.</p>
+    <div class="instructions">
+      <strong>Click</strong> map to add point<br>
+      <strong>Drag markers</strong> to adjust<br>
+      <strong>Trace coastline</strong> to keep grid out of ocean<br>
+      <strong>Close polygon</strong> — first point is auto-repeated
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" onclick="loadSamples()">Load samples</button>
+    <button onclick="undoLast()">Undo last</button>
+    <button class="btn-danger" onclick="clearAll()">Clear all</button>
+    <button class="btn-success" onclick="copyOutput()">Copy numpy</button>
+    <button onclick="downloadCoord()">Download .outer</button>
+  </div>
+
+  <div class="point-count" id="pointCount">0 points</div>
+
+  <div class="coord-list-wrapper" id="coordList">
+    <div class="empty-state">
+      Click on the map to start<br>placing boundary points
+    </div>
+  </div>
+
+  <div class="output-section">
+    <label>Numpy array (paste into script)</label>
+    <textarea id="output" readonly placeholder="OUTER = np.array([&#10;    # click map to add points&#10;])"></textarea>
+  </div>
+
+  <div class="status-bar">
+    <span id="cursorCoord">—</span>
+    <span id="polyStatus">open</span>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// --- Map setup ---
+const map = L.map('map', {
+  center: [5, 20],
+  zoom: 4,
+  zoomControl: true,
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  maxZoom: 19
+}).addTo(map);
+
+// --- State ---
+let points = [];
+let markers = [];
+let polygon = null;
+let polyline = null;
+let sampleMarkers = [];
+
+
+function loadSamples() {
+  sampleMarkers.forEach(m => map.removeLayer(m));
+  sampleMarkers = [];
+
+  sampleCoords.forEach(([lat, lon]) => {
+    const m = L.circleMarker([lat, lon], {
+      radius: 5,
+      fillColor: '#f5a623',
+      fillOpacity: 0.8,
+      color: '#000',
+      weight: 1,
+      interactive: false
+    }).addTo(map);
+    sampleMarkers.push(m);
+  });
+}
+
+// --- Click handler ---
+map.on('click', function(e) {
+  addPoint(e.latlng.lng, e.latlng.lat);
+});
+
+map.on('mousemove', function(e) {
+  document.getElementById('cursorCoord').textContent =
+    `${e.latlng.lng.toFixed(2)}, ${e.latlng.lat.toFixed(2)}`;
+});
+
+function addPoint(lng, lat) {
+  const idx = points.length;
+  points.push([lng, lat]);
+
+  const marker = L.marker([lat, lng], {
+    draggable: true,
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="width:12px;height:12px;background:#4a90d9;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6]
+    })
+  }).addTo(map);
+
+  marker.on('drag', function(e) {
+    const pos = e.target.getLatLng();
+    points[idx] = [pos.lng, pos.lat];
+    updateShape();
+    updateUI();
+  });
+
+  markers.push(marker);
+  updateShape();
+  updateUI();
+}
+
+function removePoint(idx) {
+  map.removeLayer(markers[idx]);
+  markers.splice(idx, 1);
+  points.splice(idx, 1);
+
+  // rebind drag handlers with correct indices
+  markers.forEach((m, i) => {
+    m.off('drag');
+    m.on('drag', function(e) {
+      const pos = e.target.getLatLng();
+      points[i] = [pos.lng, pos.lat];
+      updateShape();
+      updateUI();
+    });
+  });
+
+  updateShape();
+  updateUI();
+}
+
+function undoLast() {
+  if (points.length === 0) return;
+  removePoint(points.length - 1);
+}
+
+function clearAll() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  points = [];
+  updateShape();
+  updateUI();
+}
+
+function updateShape() {
+  if (polygon) { map.removeLayer(polygon); polygon = null; }
+  if (polyline) { map.removeLayer(polyline); polyline = null; }
+
+  if (points.length < 2) return;
+
+  const latlngs = points.map(p => [p[1], p[0]]);
+
+  if (points.length >= 3) {
+    polygon = L.polygon(latlngs, {
+      color: '#4a90d9',
+      weight: 2,
+      fillColor: '#4a90d9',
+      fillOpacity: 0.08,
+      dashArray: '6 4'
+    }).addTo(map);
+  } else {
+    polyline = L.polyline(latlngs, {
+      color: '#4a90d9',
+      weight: 2,
+      dashArray: '6 4'
+    }).addTo(map);
+  }
+}
+
+function updateUI() {
+  const listEl = document.getElementById('coordList');
+  const countEl = document.getElementById('pointCount');
+  const outputEl = document.getElementById('output');
+  const statusEl = document.getElementById('polyStatus');
+
+  countEl.textContent = `${points.length} point${points.length !== 1 ? 's' : ''}`;
+  statusEl.textContent = points.length >= 3 ? 'polygon' : 'open';
+
+  if (points.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">Click on the map to start<br>placing boundary points</div>';
+    outputEl.value = '';
+    return;
+  }
+
+  listEl.innerHTML = points.map((p, i) =>
+    `<div class="coord-item">
+      <span class="idx">${i + 1}</span>
+      <span class="vals">[${p[0].toFixed(1).padStart(6)}, ${p[1].toFixed(1).padStart(6)}]</span>
+      <span class="remove-btn" onclick="removePoint(${i})">×</span>
+    </div>`
+  ).join('');
+
+  // Generate numpy output (auto-close polygon)
+  let closed = [...points];
+  if (points.length >= 3) {
+    closed.push([...points[0]]); // close polygon
+  }
+
+  const rows = closed.map(p =>
+    `    [${p[0].toFixed(1).padStart(6)}, ${p[1].toFixed(1).padStart(6)}],`
+  ).join('\n');
+
+  outputEl.value = `OUTER = np.array([\n${rows}\n])`;
+}
+
+function copyOutput() {
+  const outputEl = document.getElementById('output');
+  if (!outputEl.value) return;
+  navigator.clipboard.writeText(outputEl.value);
+
+  const btn = document.querySelector('.btn-success');
+  const orig = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function downloadCoord() {
+  if (points.length < 3) return;
+
+  let closed = [...points, [...points[0]]];
+  const content = closed.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('\n');
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'african_cattle.outer';
+  a.click();
+}
+
+// Load samples on startup
+loadSamples();
+</script>
+</body>
+</html>

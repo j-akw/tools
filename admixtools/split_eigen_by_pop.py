@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-split_by_individuals.py — build one EIGENSTRAT dataset per population, each
+split_eigen_by_pop.py — build one EIGENSTRAT dataset per population, each
 containing a specific subset of individuals from that pop plus a fixed set
-of reference pops. Numpy-accelerated.
+of reference pops.
 
-Takes a flat list of sample IDs (e.g. admixed individuals from an earlier
-analysis), looks each one up in the .ind file to discover its pop, groups
+Takes a flat list of sample IDs, looks each one up in the .ind file to discover its pop, groups
 them by pop, and writes one dataset per group.
 
 For every pop P that has one or more listed individuals, creates:
@@ -18,10 +17,10 @@ all individuals from the reference pops.
 
 Usage:
     python split_by_individuals.py \\
-        -g ACP_data.geno -s ACP_data.snp -i ACP_data.ind \\
-        -l admixed_individuals.txt \\
+        -g data.geno -s data.snp -i data.ind \\
+        -l selected_individuals.txt \\
         -r ref_pops.txt \\
-        -o admixed_datasets/
+        -o selected_datasets/
 
 Requires numpy.
 """

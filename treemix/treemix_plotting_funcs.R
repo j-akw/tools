@@ -1,7 +1,6 @@
 # ==============================================================================
 # TREEMIX PLOTTING FUNCTIONS
 # ------------------------------------------------------------------------------
-# A publication-ready replacement for Pickrell & Pritchard's plotting_funcs.R.
 #
 # Public interface (all take a `stem` = the filename prefix BEFORE .vertices.gz
 # etc., so that <stem>.vertices.gz, <stem>.edges.gz etc. exist):

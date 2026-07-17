@@ -120,20 +120,3 @@ one bad run never costs you the whole figure. Choose `best_m` yourself, from an
 criterion.
 
 ---
-
-## Typical pipeline
-
-```
-PLINK .bed/.bim/.fam
-        │  plink --freq --within pops.clust
-        ▼
-    .frq.strat
-        │  plink2treemix.py
-        ▼
-  treemix_input.gz ──treemix -m 0..5 (× replicates)──▶ runs_dir/
-                                                          │
-                                    plot_treemix.R  ◀─────┘
-                                          │
-                                          ▼
-                                    PLOTS/*.pdf
-```

@@ -118,5 +118,3 @@ than aborting the run, and a plot that throws becomes a red "Error" panel — so
 one bad run never costs you the whole figure. Choose `best_m` yourself, from an
 [OptM](https://cran.r-project.org/package=OptM) Deltam peak or a variance
 criterion.
-
----

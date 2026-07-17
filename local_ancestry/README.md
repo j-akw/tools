@@ -127,20 +127,3 @@ Ancestry labels come from the `#Subpopulation` line of the first `.msp`
 read; codes without a label fall back to `Ancestry <n>`. If the sample ID is
 not found, the script lists partial matches (or the first 30 sample IDs) to
 help catch typos. Run `Rscript plot_karyogram.r --help` for the full list.
-
----
-
-## Typical pipeline
-
-```
-GNOMIX .msp + .fb
-     │
-     ├──plot_karyogram.r──▶ <sample>_karyogram.pdf   (eyeball the calls)
-     │
-     └──gnomix2bed.py──▶ beds/<SAMPLE>.bed           (posterior > 0.99 tracts)
-                              │
-                              └──maskvcf.py──▶ masked.vcf.gz
-                                 (GT kept only where hap1 ∩ hap2 == ancestry)
-```
-
----
